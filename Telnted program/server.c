@@ -48,8 +48,8 @@ void stringHandler(fd_set *readfds) {
 		closeConnection(client_sock, i);    		
 	}
 	else
-		printf("%s","here1");
-		//runExec(client_sock, data, data_len);
+		//printf("%s","here1");
+		runExec(client_sock, data, data_len);
       }
     }
   }
@@ -112,6 +112,44 @@ void signalHandler(int sig)
   exit(-1);
 }
 
+/*
+ * This method running different command lines
+ */
+int runExec(int con_client, char *data, int data_len) {
+  FILE *fp;
+  char buf[100];
+  char cmdbuf[100]= {0};
+  char *str = NULL;
+  char *temp = NULL;
+  unsigned int size = 1;  
+  unsigned int strlength;
+
+  pid_t pid = fork();
+  if (pid == -1) 
+	printf("Error Forking");
+  if (pid == 0) 
+  {
+    sprintf(cmdbuf, "%s 2>&1 ",data);
+    fp = popen(cmdbuf, "r");
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+      strlength = strlen(buf);
+      temp = realloc(str,size + strlength);  
+      if (temp == NULL) 
+      {
+	perror("buffer size problome");
+	exit(-1);
+      }
+      else 
+        str = temp;
+
+      strcpy(str + size - 1, buf);  
+      size += strlength;
+    }
+    send(con_client, str, size - 1, 0);
+    pclose(fp);
+    exit(0);
+  }
+}
 
 /*
  * MAIN()
@@ -136,7 +174,7 @@ int main(int argc, char *argv[])
  {
 	while (1) 
 	{
-		printf("%s","here");
+		//printf("%s","here");
 		stringHandler(&readfds);
 	}
   }
