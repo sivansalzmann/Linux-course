@@ -1,6 +1,17 @@
+#include <arpa/inet.h>
+#include <error.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#define ERROR -1
+#define MAX 100
 
 int sock;
 char close_string[] = {'c','l','o','s','e',' ','c','l','i','e','n','t','\0'};

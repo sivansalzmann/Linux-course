@@ -125,7 +125,6 @@ void stringHandler(fd_set *readfds) {
 		closeConnection(client_sock, i);    		
 	}
 	else
-		//printf("%s","here1");
 		runExec(client_sock, data, data_len);
       }
     }
@@ -136,7 +135,6 @@ void stringHandler(fd_set *readfds) {
 /*
  * Interupt handler
  */
-
 void signalHandler(int sig) 
 {
 
