@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
+#include <error.h>
 
 #define netErr -1
 #define MaxData 150
@@ -115,6 +117,48 @@ void signalHandler(int sig)
 /*
  * This method running different command lines
  */
+
+/*
+ * This method is listening to all the clients request
+ */
+int clientListner(int sock, fd_set *readfds) 
+{
+  struct sockaddr_in client;
+  int sockaddr_len = sizeof(struct sockaddr_in);
+  int max_sd;
+  int new;
+  
+  FD_ZERO(readfds);
+  FD_SET(sock, readfds);
+  max_sd = sock;
+
+  for (int i = 0; i < clients_size; i++) {
+    int client_sock = client_socks[i];
+
+    if (client_sock > 0) {
+      FD_SET(client_sock, readfds);
+    }
+
+    if (client_sock > max_sd) {
+      max_sd = client_sock;
+    }
+  }
+  int activity = select(max_sd + 1, readfds, NULL, NULL, NULL);
+  if ((activity < 0) && (errno != EINTR)) {
+    printf("select error");
+
+  }
+  if (FD_ISSET(sock, readfds)) {
+    if ((new = accept(sock, (struct sockaddr *)&client, &sockaddr_len)) == netErr) {
+      perror("accept");
+      exit(-1);
+    }
+    client_socks[clients_size++] = new;
+    printf("New Client connected from IP - %s ,port %d \n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+  }
+  return max_sd;
+}
+
 int runExec(int con_client, char *data, int data_len) {
   FILE *fp;
   char buf[100];
@@ -174,7 +218,6 @@ int main(int argc, char *argv[])
  {
 	while (1) 
 	{
-		//printf("%s","here");
 		stringHandler(&readfds);
 	}
   }
