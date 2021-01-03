@@ -62,6 +62,9 @@ int listnerSocket(char *p) {
   return sock;
 }
 
+/*
+ * This method running different command lines
+ */
 int runExec(int con_client, char *data, int data_len) {
   FILE *fp;
   char buf[100];
