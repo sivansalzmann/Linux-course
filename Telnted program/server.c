@@ -63,100 +63,6 @@ int listnerSocket(char *p) {
 }
 
 /*
- * This method running different command lines
- */
-int runExec(int con_client, char *data, int data_len) {
-  FILE *fp;
-  char buf[100];
-  char cmdbuf[100]= {0};
-  char *str = NULL;
-  char *temp = NULL;
-  unsigned int size = 1;  
-  unsigned int strlength;
-
-  pid_t pid = fork();
-  if (pid == -1) 
-	printf("Error Forking");
-  if (pid == 0) 
-  {
-    sprintf(cmdbuf, "%s 2>&1 ",data);
-    fp = popen(cmdbuf, "r");
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
-      strlength = strlen(buf);
-      temp = realloc(str,size + strlength);  
-      if (temp == NULL) 
-      {
-	perror("buffer size problome");
-	exit(-1);
-      }
-      else 
-        str = temp;
-
-      strcpy(str + size - 1, buf);  
-      size += strlength;
-    }
-    send(con_client, str, size - 1, 0);
-    pclose(fp);
-    exit(0);
-  }
-}
-
-/*
- * This method handling the string that sends over the connection
- */
-void stringHandler(fd_set *readfds) {
-  int data_len;
-  char data[MaxData];
-  for (int i = 0; i < clients_size; i++)
- {
-    int client_sock = client_socks[i];
-    if (FD_ISSET(client_sock, readfds)) {
-      data_len = recv(client_sock, data, MaxData, 0);
-
-      if (data_len == 0) 
-	closeConnection(client_sock, i);
-
-
-      if (data_len) {
-	data[data_len-2] = '\0';
-  	if(strcmp(close_string, data) == 0)
-  	{
-		printf("comprasion worked\n");
-		closeConnection(client_sock, i);    		
-	}
-	else
-		runExec(client_sock, data, data_len);
-      }
-    }
-  }
-}
-
-
-/*
- * Interupt handler
- */
-void signalHandler(int sig) 
-{
-
-  int closed_connections=0;
-
-  for (int i=0; i<clients_size; i++)
-  {
-    if(client_socks[i]!=0)
-    {
-      closed_connections++;
-      close(client_socks[i]);     
-     }    
-  }
-
-  printf("number of client closed - %d \n",closed_connections);
-  close(sock);
-  printf("closed server\n");
-  exit(-1);
-}
-
-
-/*
  * This method is listening to all the clients request
  */
 int clientListner(int sock, fd_set *readfds) 
@@ -198,6 +104,100 @@ int clientListner(int sock, fd_set *readfds)
 }
 
 /*
+ * This method running different command lines
+ */
+int runExec(int con_client, char *data, int data_len) {
+  FILE *fp;
+  char buf[100];
+  char cmdbuf[100]= {0};
+  char *str = NULL;
+  char *temp = NULL;
+  unsigned int size = 1;  
+  unsigned int strlength;
+
+  pid_t pid = fork();
+  if (pid == -1) 
+	printf("Error Forking");
+  if (pid == 0) 
+  {
+    sprintf(cmdbuf, "%s 2>&1 ",data);
+    fp = popen(cmdbuf, "r");
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+      strlength = strlen(buf);
+      temp = realloc(str,size + strlength);  
+      if (temp == NULL) 
+      {
+	perror("buffer size problome");
+	exit(-1);
+      }
+      else 
+        str = temp;
+
+      strcpy(str + size - 1, buf);  
+      size += strlength;
+    }
+    send(con_client, str, size - 1, 0);
+    pclose(fp);
+    exit(0);
+  }
+}
+
+
+/*
+ * This method handling the string that sends over the connection
+ */
+void stringHandler(fd_set *readfds) {
+  int data_len;
+  char data[MaxData];
+  for (int i = 0; i < clients_size; i++)
+ {
+    int client_sock = client_socks[i];
+    if (FD_ISSET(client_sock, readfds)) {
+      data_len = recv(client_sock, data, MaxData, 0);
+
+      if (data_len == 0) 
+	closeConnection(client_sock, i);
+
+
+      if (data_len) {
+	data[data_len-2] = '\0';
+  	if(strcmp(close_string, data) == 0)
+  	{
+		printf("comprasion worked\n");
+		closeConnection(client_sock, i);    		
+	}
+	else
+		runExec(client_sock, data, data_len);
+      }
+    }
+  }
+}
+
+/*
+ * Interupt handler
+ */
+
+void signalHandler(int sig) 
+{
+
+  int closed_connections=0;
+
+  for (int i=0; i<clients_size; i++)
+  {
+    if(client_socks[i]!=0)
+    {
+      closed_connections++;
+      close(client_socks[i]);     
+     }    
+  }
+
+  printf("number of client closed - %d \n",closed_connections);
+  close(sock);
+  printf("closed server\n");
+  exit(-1);
+}
+
+/*
  * MAIN()
  */
 int main(int argc, char *argv[]) 
@@ -210,8 +210,7 @@ int main(int argc, char *argv[])
   }
 
   fd_set readfds;
-
-  signal(SIGABRT,signalHandler);
+  signal(SIGINT,signalHandler);
   signal(SIGABRT,signalHandler);
   
   char * port = argv[1];
@@ -227,3 +226,4 @@ int main(int argc, char *argv[])
   }
   close(sock);
 }
+

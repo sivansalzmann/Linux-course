@@ -73,4 +73,22 @@ int main(int argc, char **argv) {
     printf("needs to provide port numer\n");
     exit(-1);
   }
+ port = atoi(argv[1]);
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == ERROR) {
+    perror("client socket: ");
+    exit(-1);
+  }
+
+  server.sin_family = AF_INET;
+  server.sin_port = htons(port);
+  server.sin_addr.s_addr = inet_addr("127.0.0.1");
+  bzero(&client.sin_zero, 8);
+
+  if (connect(sock, (struct sockaddr *)&server, sizeof(server)) != 0) {
+    printf("connection to the server faild \n");
+    exit(0);
+  } else
+    printf("connection to the server sucsess\n\n");
+  messgServer(sock);
+  close(sock);
 }
