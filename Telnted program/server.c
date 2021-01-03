@@ -15,6 +15,16 @@ int clients_size = 0;
 char close_string[] = {'c','l','o','s','e',' ','c','l','i','e','n','t','\0'};
 
 /*
+ * This method is closing the connection with clients connected to our port
+ */
+void closeConnection(int client,int clientN)
+{
+        printf("Closing connection with client %d\n", client);
+        close(client);
+        client_socks[clientN] = 0;
+}
+
+/*
  * This method handling the string that sends over the connection
  */
 void stringHandler(fd_set *readfds) {
@@ -27,7 +37,7 @@ void stringHandler(fd_set *readfds) {
       data_len = recv(client_sock, data, MaxData, 0);
 
       if (data_len == 0) 
-	//closeConnection(client_sock, i);
+	closeConnection(client_sock, i);
 
 
       if (data_len) {
@@ -35,7 +45,7 @@ void stringHandler(fd_set *readfds) {
   	if(strcmp(close_string, data) == 0)
   	{
 		printf("comprasion worked\n");
-		//closeConnection(client_sock, i);    		
+		closeConnection(client_sock, i);    		
 	}
 	else
 		printf("%s","here1");
