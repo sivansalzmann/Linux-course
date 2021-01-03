@@ -1,12 +1,15 @@
-#include <sys/socket.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <unistd.h>
-#include <signal.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <error.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
 
 #define netErr -1
 #define MaxData 150
@@ -24,37 +27,6 @@ void closeConnection(int client,int clientN)
         printf("Closing connection with client %d\n", client);
         close(client);
         client_socks[clientN] = 0;
-}
-
-/*
- * This method handling the string that sends over the connection
- */
-void stringHandler(fd_set *readfds) {
-  int data_len;
-  char data[MaxData];
-  for (int i = 0; i < clients_size; i++)
- {
-    int client_sock = client_socks[i];
-    if (FD_ISSET(client_sock, readfds)) {
-      data_len = recv(client_sock, data, MaxData, 0);
-
-      if (data_len == 0) 
-	closeConnection(client_sock, i);
-
-
-      if (data_len) {
-	data[data_len-2] = '\0';
-  	if(strcmp(close_string, data) == 0)
-  	{
-		printf("comprasion worked\n");
-		closeConnection(client_sock, i);    		
-	}
-	else
-		//printf("%s","here1");
-		runExec(client_sock, data, data_len);
-      }
-    }
-  }
 }
 
 /*
@@ -90,6 +62,74 @@ int listnerSocket(char *p) {
   return sock;
 }
 
+int runExec(int con_client, char *data, int data_len) {
+  FILE *fp;
+  char buf[100];
+  char cmdbuf[100]= {0};
+  char *str = NULL;
+  char *temp = NULL;
+  unsigned int size = 1;  
+  unsigned int strlength;
+
+  pid_t pid = fork();
+  if (pid == -1) 
+	printf("Error Forking");
+  if (pid == 0) 
+  {
+    sprintf(cmdbuf, "%s 2>&1 ",data);
+    fp = popen(cmdbuf, "r");
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+      strlength = strlen(buf);
+      temp = realloc(str,size + strlength);  
+      if (temp == NULL) 
+      {
+	perror("buffer size problome");
+	exit(-1);
+      }
+      else 
+        str = temp;
+
+      strcpy(str + size - 1, buf);  
+      size += strlength;
+    }
+    send(con_client, str, size - 1, 0);
+    pclose(fp);
+    exit(0);
+  }
+}
+
+/*
+ * This method handling the string that sends over the connection
+ */
+void stringHandler(fd_set *readfds) {
+  int data_len;
+  char data[MaxData];
+  for (int i = 0; i < clients_size; i++)
+ {
+    int client_sock = client_socks[i];
+    if (FD_ISSET(client_sock, readfds)) {
+      data_len = recv(client_sock, data, MaxData, 0);
+
+      if (data_len == 0) 
+	closeConnection(client_sock, i);
+
+
+      if (data_len) {
+	data[data_len-2] = '\0';
+  	if(strcmp(close_string, data) == 0)
+  	{
+		printf("comprasion worked\n");
+		closeConnection(client_sock, i);    		
+	}
+	else
+		//printf("%s","here1");
+		runExec(client_sock, data, data_len);
+      }
+    }
+  }
+}
+
+
 /*
  * Interupt handler
  */
@@ -114,9 +154,6 @@ void signalHandler(int sig)
   exit(-1);
 }
 
-/*
- * This method running different command lines
- */
 
 /*
  * This method is listening to all the clients request
@@ -159,42 +196,6 @@ int clientListner(int sock, fd_set *readfds)
   return max_sd;
 }
 
-int runExec(int con_client, char *data, int data_len) {
-  FILE *fp;
-  char buf[100];
-  char cmdbuf[100]= {0};
-  char *str = NULL;
-  char *temp = NULL;
-  unsigned int size = 1;  
-  unsigned int strlength;
-
-  pid_t pid = fork();
-  if (pid == -1) 
-	printf("Error Forking");
-  if (pid == 0) 
-  {
-    sprintf(cmdbuf, "%s 2>&1 ",data);
-    fp = popen(cmdbuf, "r");
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
-      strlength = strlen(buf);
-      temp = realloc(str,size + strlength);  
-      if (temp == NULL) 
-      {
-	perror("buffer size problome");
-	exit(-1);
-      }
-      else 
-        str = temp;
-
-      strcpy(str + size - 1, buf);  
-      size += strlength;
-    }
-    send(con_client, str, size - 1, 0);
-    pclose(fp);
-    exit(0);
-  }
-}
-
 /*
  * MAIN()
  */
@@ -210,6 +211,7 @@ int main(int argc, char *argv[])
   fd_set readfds;
 
   signal(SIGABRT,signalHandler);
+  signal(SIGABRT,signalHandler);
   
   char * port = argv[1];
   sock = listnerSocket(port);
@@ -218,6 +220,7 @@ int main(int argc, char *argv[])
  {
 	while (1) 
 	{
+		clientListner(sock, &readfds);
 		stringHandler(&readfds);
 	}
   }
