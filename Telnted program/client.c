@@ -17,7 +17,6 @@ int sock;
 char close_string[] = {'c','l','o','s','e',' ','c','l','i','e','n','t','\0'};
 struct sockaddr_in server;
 struct sockaddr_in client;
-
 /*
  * This method is sending message to the server
  */
