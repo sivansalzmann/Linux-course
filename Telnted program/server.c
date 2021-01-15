@@ -17,7 +17,7 @@
 int sock;
 int client_socks[5] = {0};
 int clients_size = 0;
-char close_string[] = {'c','l','o','s','e',' ','c','l','i','e','n','t','\0'};
+char close_string[] = {'E','X','I','T','\0'};
 /*
  * This method is closing the connection with clients connected to our port
  */
